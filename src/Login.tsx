@@ -11,15 +11,15 @@ import {
   GoogleSignin,
   GoogleSigninButton,
 } from '@react-native-google-signin/google-signin';
-import {webClientId} from './config';
+import {WEB_CLIENT_ID} from '@env';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
-  const [email, setEmail] = useState<string>('jane.doe@example.com');
-  const [password, setPassword] = useState<string>('SuperSecretPassword!');
+  const [email, setEmail] = useState<string>('harry@yopmail.com');
+  const [password, setPassword] = useState<string>('1234567890');
 
   useEffect(() => {
     async function init() {
@@ -27,7 +27,7 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
       if (has) {
         GoogleSignin.configure({
           offlineAccess: true,
-          webClientId: webClientId,
+          webClientId: WEB_CLIENT_ID,
         });
       }
     }
@@ -37,10 +37,11 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
   const onLogin = () => {
     auth()
       .signInWithEmailAndPassword(email, password)
-      .then(() => {
+      .then(async () => {
         console.log('User signed in!');
       })
       .catch(error => {
+        console.log('error: ', error);
         if (error.code === 'auth/user-not-found') {
           console.log('No user found for that email.');
         }
@@ -52,6 +53,7 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
         console.error(error);
       });
   };
+
   const onGoogleButtonPress = async () => {
     try {
       await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});

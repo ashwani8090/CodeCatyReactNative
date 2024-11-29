@@ -7,7 +7,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
-
+import {db} from './config/firebase'; // Ensure you have your Firebase config set up
+import {collection, addDoc} from 'firebase/firestore';
 interface SignupProps {
   onSwitchToLogin: () => void;
 }
@@ -19,10 +20,18 @@ const Signup: React.FC<SignupProps> = ({onSwitchToLogin}) => {
   const onSignup = () => {
     auth()
       .createUserWithEmailAndPassword(email, password)
-      .then(() => {
+      .then(({user}) => {
         console.log('User account created & signed in!');
+        if (!user) return;
+
+        addDoc(collection(db, 'users'), {
+          _id: user.uid,
+          name: user.email,
+          avatar: user.photoURL,
+        });
       })
       .catch(error => {
+        console.log('error: ', error);
         if (error.code === 'auth/email-already-in-use') {
           console.log('That email address is already in use!');
         }
@@ -80,8 +89,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 20,
     paddingHorizontal: 10,
-    color:'black',
-    backgroundColor:'#C8C8C8'
+    color: 'black',
+    backgroundColor: '#C8C8C8',
   },
   button: {
     width: '80%',

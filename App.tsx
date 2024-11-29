@@ -1,18 +1,23 @@
 import React, {useEffect, useState} from 'react';
-import {
-  Text,
-  TouchableOpacity,
-  View,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import {StyleSheet, SafeAreaView} from 'react-native';
 import BootSplash from 'react-native-bootsplash';
 import usePushNotification from './src/usePushNotification';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import Signup from './src/Signup';
 import Login from './src/Login';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
-import {webClientId} from './src/config';
+import {WEB_CLIENT_ID} from '@env';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {Friends} from './src/Freinds';
+import {db} from './src/config/firebase';
+import {
+  collection,
+  doc,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+} from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [isSignup, setIsSignup] = useState<boolean>(false);
@@ -34,17 +39,52 @@ const App: React.FC = () => {
       const has = await GoogleSignin.hasPlayServices();
       if (has) {
         GoogleSignin.configure({
-          webClientId: webClientId,
+          webClientId: WEB_CLIENT_ID,
         });
       }
     }
     init();
   }, []);
 
-  // Handle user state changes
   function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
-    setUser(user);
+    if (user) {
+      const messagesRef = collection(db, 'users');
+      // Query messages where the user and friend are involved
+      const q = query(
+        messagesRef,
+        where('name', '==', user?.email), // Either user is the sender or friend is the sender
+      );
+      getDocs(q)
+        .then(snapshot => {
+          if (snapshot.empty) {
+            console.log('No users found.');
+          } else {
+            // Extract user data from the snapshot
+            const usersList: any = snapshot.docs.map(doc => ({
+              ID: doc.id,
+              ...doc.data(),
+            }));
+            const userdetails = {...(user as any)._user, ...usersList[0]};
+            console.log('userdetails: ', userdetails);
+            setUser(userdetails);
+            setFcmToken(userdetails?.ID);
+            // You can store the users in state here (if needed)
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching users:', error);
+        });
+    } else {
+      setUser(null);
+    }
     if (initializing) setInitializing(false);
+  }
+
+  async function setFcmToken(usersId: string) {
+    const fcmToken = await getFCMToken();
+    updateDoc(doc(db, 'users', usersId), {
+      fcmToken,
+    });
   }
 
   useEffect(() => {
@@ -84,18 +124,18 @@ const App: React.FC = () => {
     requestUserPermission,
   ]);
 
-  const signOut = async () => {
-    try {
-      await GoogleSignin.revokeAccess();
-      await GoogleSignin.signOut();
-      setUser(null);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // const signOut = async () => {
+  //   try {
+  //     await GoogleSignin.revokeAccess();
+  //     await GoogleSignin.signOut();
+  //     setUser(null);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const onLogout = () => {
-    signOut();
+    // signOut();
     auth()
       .signOut()
       .then(() => console.log('User signed out!'))
@@ -103,21 +143,17 @@ const App: React.FC = () => {
   };
 
   if (initializing) return <></>;
-  console.log('user: ', user);
 
   if (!!user) {
     return (
-      <View style={styles.userContainer}>
-        <Text>Welcome, {user.email}</Text>
-        <TouchableOpacity style={styles.button} onPress={onLogout}>
-          <Text style={styles.buttonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaProvider>
+        <Friends user={user} onLogout={onLogout} />
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'red'}}>
+    <SafeAreaView style={styles.container}>
       {isSignup ? (
         <Signup onSwitchToLogin={() => setIsSignup(false)} />
       ) : (
@@ -128,19 +164,45 @@ const App: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row', // Align items horizontally
+    justifyContent: 'space-between', // Space between title and logout
+    alignItems: 'center',
+    padding: 5,
+  },
+  headerText: {
+    color: '#00001a', // Light text
+    fontSize: 18,
+  },
+  logoutButton: {
+    backgroundColor: '#66b3ff', // Purple button
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   input: {
     width: '80%',
     height: 50,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#555', // Darker border color
     borderRadius: 5,
     marginBottom: 20,
     paddingHorizontal: 10,
+    color: '#fff', // Light text
+    backgroundColor: '#1e1e1e', // Dark input background
   },
   button: {
-    width: '80%',
-    height: 50,
-    backgroundColor: '#6200ea',
+    height: 40,
+    width: 120,
+    backgroundColor: '#6200ea', // Purple button
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 5,
@@ -152,10 +214,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   userContainer: {
-    flex: 1,
+    padding: 10,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#e6e6ff', // Dark theme header
+  },
+  userText: {
+    color: '#fff', // Light text
+    fontSize: 18,
+  },
+
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+  },
+  avatarText: {
+    color: '#ffff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
 

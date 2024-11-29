@@ -21,7 +21,6 @@ DerivedData
 *.ipa
 *.xcuserstate
 **/.xcode.env.local
-src/config/
 
 # Android/IntelliJ
 #
@@ -35,6 +34,7 @@ local.properties
 *.keystore
 !debug.keystore
 google-services.json
+.env
 
 # node.js
 #
