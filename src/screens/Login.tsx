@@ -6,20 +6,19 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+
+import {WEB_CLIENT_ID} from '@env';
 import auth from '@react-native-firebase/auth';
 import {
   GoogleSignin,
   GoogleSigninButton,
 } from '@react-native-google-signin/google-signin';
-import {WEB_CLIENT_ID} from '@env';
+import {useNavigation} from '@react-navigation/native';
 
-interface LoginProps {
-  onSwitchToSignup: () => void;
-}
-
-const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
+const Login: React.FC<any> = () => {
   const [email, setEmail] = useState<string>('harry@yopmail.com');
   const [password, setPassword] = useState<string>('1234567890');
+  const {navigate} = useNavigation<any>();
 
   useEffect(() => {
     async function init() {
@@ -38,16 +37,16 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
     auth()
       .signInWithEmailAndPassword(email, password)
       .then(async () => {
-        console.log('User signed in!');
+        console.info('User signed in!');
       })
       .catch(error => {
-        console.log('error: ', error);
+        console.error('error: ', error);
         if (error.code === 'auth/user-not-found') {
-          console.log('No user found for that email.');
+          console.error('No user found for that email.');
         }
 
         if (error.code === 'auth/wrong-password') {
-          console.log('Incorrect password.');
+          console.error('Incorrect password.');
         }
 
         console.error(error);
@@ -65,14 +64,14 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
         data?.data.idToken,
       );
 
-      console.log('credential: ', googleCredential);
+      console.info('credential: ', googleCredential);
       // login with credential
       await auth().signInWithCredential(googleCredential);
 
       //  Handle the linked account as needed in your app
       return;
     } catch (e) {
-      console.log('e: ', e);
+      console.error('e: ', e);
     }
   };
 
@@ -98,15 +97,19 @@ const Login: React.FC<LoginProps> = ({onSwitchToSignup}) => {
       <TouchableOpacity style={styles.button} onPress={onLogin}>
         <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={onSwitchToSignup} style={styles.switchButton}>
+      <TouchableOpacity
+        onPress={() => {
+          navigate('SignUp');
+        }}
+        style={styles.switchButton}>
         <Text style={styles.switchButtonText}>
-          Don't have an account? Sign Up
+          Don&apos;t have an account? Sign Up
         </Text>
       </TouchableOpacity>
       <GoogleSigninButton
         onPress={() =>
           onGoogleButtonPress().then(() =>
-            console.log('Signed in with Google!'),
+            console.info('Signed in with Google!'),
           )
         }
       />

@@ -1,4 +1,5 @@
-import React, {useState, useEffect} from 'react';
+import {collection, getDocs, onSnapshot} from 'firebase/firestore';
+import React, {useState, useEffect, useContext} from 'react';
 import {
   View,
   Text,
@@ -7,15 +8,19 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import {collection, getDocs, onSnapshot} from 'firebase/firestore';
-import {db} from './config/firebase'; // Ensure Firebase is properly configured
-import {Chat} from './Chat';
 
-export function Friends({user, onLogout}: any) {
+
+import {db} from '@config/firebase'; // Ensure Firebase is properly configured
+import {AuthContext} from '@contexts/AuthProvider';
+import {useNavigation} from '@react-navigation/native';
+
+
+export function Friends() {
+  const {user} = useContext(AuthContext);
   const [users, setUsers] = useState<any>([]);
-  const [friend, setFriend] = useState<any>(null);
   const [curentUser, setCurentUser] = useState(null);
   const [conversations, setConversation] = useState([]);
+  const {navigate} = useNavigation<any>();
 
   useEffect(() => {
     const fetchConversations = () => {
@@ -29,7 +34,6 @@ export function Friends({user, onLogout}: any) {
             ...doc.data(),
           }));
 
-          console.log('Real-time conversations: ', updatedConversations);
           setConversation(updatedConversations);
         });
 
@@ -41,7 +45,7 @@ export function Friends({user, onLogout}: any) {
     };
 
     fetchConversations();
-  }, [friend]);
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -92,7 +96,12 @@ export function Friends({user, onLogout}: any) {
           styles.userCard,
           {backgroundColor: unseen ? '#66ccff' : 'white'},
         ]}
-        onPress={() => setFriend(item)}>
+        onPress={() => {
+          navigate('Chat', {
+            friend:item,
+            user: curentUser,
+          });
+        }}>
         <View style={[styles.avatarContainer]}>
           {avatarUrl ? (
             // Display the avatar image if available
@@ -112,57 +121,8 @@ export function Friends({user, onLogout}: any) {
     );
   };
 
-  if (friend && users?.length) {
-    return (
-      <>
-        <View>
-          <TouchableOpacity onPress={() => setFriend(null)}>
-            <Text style={[styles.backButtonText]}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.header}>
-          <View style={[styles.avatarContainer, styles.chatHeader]}>
-            {friend?.avatar ? (
-              // Display the avatar image if available
-              <Image
-                source={{uri: friend?.avatar}}
-                style={styles.avatarImage}
-              />
-            ) : (
-              // Display initials if no avatar is available
-              <Text style={styles.avatarText}>{getInitials(friend?.name)}</Text>
-            )}
-          </View>
-        </View>
-        <Chat friend={friend} user={curentUser} />
-      </>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={[styles.avatarContainer]}>
-          {(user as any)?.avatar ? (
-            <>
-              <Image
-                source={{uri: (user as any)?.avatar}}
-                style={styles.avatarImageHeader}
-              />
-            </>
-          ) : (
-            // Display the avatar image if available
-            // Display initials if no avatar is available
-            <Text style={styles.avatarText}>
-              {getInitials((user as any).email)}
-            </Text>
-          )}
-        </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
       {/* Header */}
       <View style={styles.headerFriend}>
         <Text style={styles.headerText}>Friends</Text>
@@ -186,30 +146,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    paddingTop: 15,
   },
-  header: {
-    flexDirection: 'row', // Align items horizontally
-    justifyContent: 'space-between', // Space between title and logout
-    alignItems: 'center',
-    padding: 5,
-  },
-  logoutButton: {
-    backgroundColor: '#66b3ff', // Purple button
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+
   headerFriend: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: 30,
     color: '#000000',
   },
   backButton: {
@@ -244,7 +187,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
-    height: 80
+    height: 80,
   },
   avatarContainer: {
     width: 80,
@@ -273,7 +216,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     color: '#000',
-   
   },
   name: {
     fontSize: 18,
@@ -286,6 +228,6 @@ const styles = StyleSheet.create({
     color: '#bbb',
     fontWeight: 'bold',
     height: 20,
-    overflow:'hidden',
+    overflow: 'hidden',
   },
 });

@@ -1,6 +1,3 @@
-import React, {useState, useCallback, useEffect} from 'react';
-import {GiftedChat, InputToolbar} from 'react-native-gifted-chat';
-import {db} from './config/firebase';
 import {
   collection,
   addDoc,
@@ -12,10 +9,14 @@ import {
   getDocs,
   updateDoc,
 } from 'firebase/firestore';
+import React, {useState, useCallback, useEffect} from 'react';
+import {GiftedChat, InputToolbar} from 'react-native-gifted-chat';
+
+import {db} from '@config/firebase';
 
 export function Chat(props: any) {
   const [messages, setMessages] = useState([]);
-  const {user, friend} = props;
+  const {user, friend} = props?.route?.params ?? {};
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [friendIsTyping, setFriendIsTyping] = useState(false); // Track friend's typing state
@@ -50,7 +51,7 @@ export function Chat(props: any) {
     };
 
     ensureConversation();
-  }, [user.id, friend.id]);
+  }, [user?.id, friend?.id]);
 
   // Fetch messages and mark unseen messages as seen
   useEffect(() => {
@@ -155,8 +156,8 @@ export function Chat(props: any) {
           }),
         });
          */
-       
-        console.log('user: ', friend);
+
+        console.info('user: ', friend);
       } catch (error) {
         console.error('Error sending message:', error);
       }
@@ -192,7 +193,6 @@ export function Chat(props: any) {
   };
 
   return (
-    <>
       <GiftedChat
         messages={messages}
         onSend={messages => onSend(messages)}
@@ -202,6 +202,9 @@ export function Chat(props: any) {
         onInputTextChanged={handleInputChange}
         textInputProps={{
           onBlur: handleInputBlur,
+        }}
+        messagesContainerStyle={{
+          backgroundColor: '#fff',
         }}
         renderInputToolbar={props => (
           <InputToolbar
@@ -215,6 +218,5 @@ export function Chat(props: any) {
           />
         )}
       />
-    </>
   );
 }

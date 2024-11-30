@@ -1,3 +1,4 @@
+import {collection, addDoc} from 'firebase/firestore';
 import React, {useState} from 'react';
 import {
   View,
@@ -6,22 +7,21 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import {db} from './config/firebase'; // Ensure you have your Firebase config set up
-import {collection, addDoc} from 'firebase/firestore';
-interface SignupProps {
-  onSwitchToLogin: () => void;
-}
 
-const Signup: React.FC<SignupProps> = ({onSwitchToLogin}) => {
+import auth from '@react-native-firebase/auth';
+import {useNavigation} from '@react-navigation/native';
+
+import {db} from '../config/firebase'; // Ensure you have your Firebase config set up
+
+const Signup: React.FC<any> = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const {navigate} = useNavigation<any>();
 
   const onSignup = () => {
     auth()
       .createUserWithEmailAndPassword(email, password)
       .then(({user}) => {
-        console.log('User account created & signed in!');
         if (!user) return;
 
         addDoc(collection(db, 'users'), {
@@ -31,13 +31,12 @@ const Signup: React.FC<SignupProps> = ({onSwitchToLogin}) => {
         });
       })
       .catch(error => {
-        console.log('error: ', error);
         if (error.code === 'auth/email-already-in-use') {
-          console.log('That email address is already in use!');
+          console.error('That email address is already in use!');
         }
 
         if (error.code === 'auth/invalid-email') {
-          console.log('That email address is invalid!');
+          console.error('That email address is invalid!');
         }
 
         console.error(error);
@@ -65,7 +64,11 @@ const Signup: React.FC<SignupProps> = ({onSwitchToLogin}) => {
       <TouchableOpacity style={styles.button} onPress={onSignup}>
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={onSwitchToLogin} style={styles.switchButton}>
+      <TouchableOpacity
+        onPress={() => {
+          navigate('SignIn');
+        }}
+        style={styles.switchButton}>
         <Text style={styles.switchButtonText}>
           Already have an account? Log In
         </Text>

@@ -1,5 +1,6 @@
-import messaging from '@react-native-firebase/messaging';
 import {PermissionsAndroid, Platform} from 'react-native';
+
+import messaging from '@react-native-firebase/messaging';
 
 const usePushNotification = () => {
   const requestUserPermission = async () => {
@@ -11,7 +12,7 @@ const usePushNotification = () => {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        console.log('Authorization status:', authStatus);
+        console.info('Authorization status:', authStatus);
       }
     } else if (Platform.OS === 'android') {
       //Request Android permission (For API level 33+, for 32 or below is not required)
@@ -24,16 +25,16 @@ const usePushNotification = () => {
   const getFCMToken = async () => {
     const fcmToken = await messaging().getToken();
     if (fcmToken) {
-      console.log('Your Firebase Token is:', fcmToken);
+      console.info('Your Firebase Token is:', fcmToken);
       return fcmToken;
     } else {
-      console.log('Failed', 'No token received');
+      console.error('Failed', 'No token received');
     }
   };
 
   const listenToForegroundNotifications = async () => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log(
+      console.info(
         'A new message arrived! (FOREGROUND)',
         JSON.stringify(remoteMessage),
       );
@@ -44,7 +45,7 @@ const usePushNotification = () => {
   const listenToBackgroundNotifications = async () => {
     const unsubscribe = messaging().setBackgroundMessageHandler(
       async remoteMessage => {
-        console.log(
+        console.info(
           'A new message arrived! (BACKGROUND)',
           JSON.stringify(remoteMessage),
         );
@@ -56,7 +57,7 @@ const usePushNotification = () => {
   const onNotificationOpenedAppFromBackground = async () => {
     const unsubscribe = messaging().onNotificationOpenedApp(
       async remoteMessage => {
-        console.log(
+        console.info(
           'App opened from BACKGROUND by tapping notification:',
           JSON.stringify(remoteMessage),
         );
@@ -69,7 +70,7 @@ const usePushNotification = () => {
     const message = await messaging().getInitialNotification();
 
     if (message) {
-      console.log(
+      console.info(
         'App opened from QUIT by tapping notification:',
         JSON.stringify(message),
       );
